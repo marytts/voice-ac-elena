@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'de.dfki.mary'
-version '5.2'
+version '5.2.1'
 
 voice {
     name = 'ac-elena'
