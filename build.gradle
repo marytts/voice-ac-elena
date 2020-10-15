@@ -1,35 +1,37 @@
 plugins {
-    id 'de.dfki.mary.voicebuilding-festvox' version '5.2.2'
-    id 'de.dfki.mary.voicebuilding-legacy' version '5.2.2'
+    id 'de.dfki.mary.voicebuilding-festvox' version '5.5-SNAPSHOT'
+    id 'de.dfki.mary.voicebuilding-legacy' version '5.5-SNAPSHOT'
 }
 
 group 'de.dfki.mary'
 version '5.3-SNAPSHOT'
 
-voice {
-    name = 'ac-elena'
-    language = 'ru'
-    region = 'RU'
-    gender = 'female'
-    type = 'unit selection'
-    description = 'A female Russian unit selection voice'
-    license {
-        name = 'Creative Commons Attribution-ShareAlike 3.0 Unported'
-        shortName = 'CC-BY-SA'
-        url = 'http://mary.dfki.de/download/by-sa-3.0.html'
+marytts {
+    voice {
+        name = 'ac-elena'
+        language = 'ru'
+        region = 'RU'
+        gender = 'female'
+        type = 'unit selection'
+        description = 'A female Russian unit selection voice'
+        license {
+            name = 'Creative Commons Attribution-ShareAlike 3.0 Unported'
+            shortName = 'CC-BY-SA'
+            url = 'http://mary.dfki.de/download/by-sa-3.0.html'
+        }
+        samplingRate = 16000
     }
-    samplingRate = 16000
 }
 
 repositories {
     ivy {
-        url 'http://mary.dfki.de/repo'
-        layout 'maven'
-    }
-    ivy {
-        url 'http://alphacephei.com/test/tts/'
-        layout 'pattern', {
-            artifact '[module]-[revision].[ext]'
+        url 'http://alphacephei.com/tts'
+        allowInsecureProtocol = true
+        patternLayout {
+            artifact '[artifact]-[revision].[ext]'
+        }
+        metadataSources {
+            artifact()
         }
     }
 }
@@ -43,6 +45,7 @@ def mapping = [
     'ssil': '_',
 ]
 
+
 task simpleLab(type: Copy) {
     from processDataResources
     into "$project.buildDir/lab"
@@ -55,17 +58,23 @@ task simpleLab(type: Copy) {
     }
 }
 
-legacyInit {
-    dependsOn wav, simpleLab, text
-    def basenameListFile = file("$buildDir/basenames.lst")
-    outputs.files basenameListFile
+task simpleText {
+    dependsOn processDataResources
+    def out_dir = new File("$project.buildDir/text")
+    ext.dest_dir = out_dir
+    outputs.dir(out_dir)
+
     doLast {
-        basenameListFile.withWriter { basenameList ->
-            fileTree(wav.destDir).collect {
-                it.name - '.wav'
-            }.each {
-                basenameList.writeLine it
-            }
+        out_dir.mkdirs()
+        (new File("$processDataResources.destinationDir/txt.done.data")).eachLine { line ->
+            def elts = line.split(' "')
+            def filename = elts[0].replace(/( /, "") + ".txt"
+            (new File("$out_dir/$filename")).text = elts[1].replace(/" )/, "")
         }
     }
+}
+
+basenames {
+    dependsOn wav, simpleLab, simpleText
+    include '*'
 }
